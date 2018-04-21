@@ -11,6 +11,10 @@ type Video struct {
 	Posts VideoPosts `xml:"posts"`
 }
 
+func NewVideo() *Video {
+	return &Video{}
+}
+
 type VideoPosts struct {
 	BasePosts
 	Post []VideoPost `xml:"post"`
@@ -21,9 +25,15 @@ type VideoPost struct {
 	VideoPlayer string `xml:"video-player"`
 }
 
-func (post *VideoPost) ParseVideoUrl() string {
+func (post *VideoPost) ParseVideoUrl() (bool, string) {
 
 	player := VideoPlayer{}
+
+	fmt.Println("post.VideoPlayer", post.VideoPlayer)
+
+	if strings.Contains(post.VideoPlayer, "instagram-media") {
+		return false, ""
+	}
 
 	playerString := strings.Replace(post.VideoPlayer, "&lt;", "<", -1)
 	playerString = strings.Replace(playerString, "&gt;", ">", -1)
@@ -46,10 +56,12 @@ func (post *VideoPost) ParseVideoUrl() string {
 	if err != nil {
 		fmt.Println(err)
 
+		fmt.Println("playerString", playerString)
+
 		panic(err)
 	}
 
-	return player.Source.Src
+	return true, player.Source.Src
 }
 
 type VideoPlayer struct {

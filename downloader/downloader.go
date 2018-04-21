@@ -6,28 +6,41 @@ import (
 	"github.com/qbhy/go-utils"
 	"github.com/parnurzeal/gorequest"
 	"path"
+	"sync"
+	"strings"
+	"path/filepath"
 )
 
-var Channel chan bool
 var request *gorequest.SuperAgent
+var WaitGroupInstance sync.WaitGroup
 
 func init() {
-	Channel = make(chan bool)
 	request = gorequest.New()
 }
 
-func downloadVideos(site *Site, posts *response.VideoPosts) {
-	for index, post := range posts.Post {
-		fmt.Println("index:", index)
-		go downloadFile(site.ProxyConfig, post.ParseVideoUrl(), site.videoPath, post.Tumblelog.Title+string(index)+".mp4")
+func downloadVideos(site *Site, posts response.VideoPosts) {
+
+	fmt.Println("post数量：", len(posts.Post), posts.Total)
+
+	for _, post := range posts.Post {
+		if ok, videoUrl := post.ParseVideoUrl(); ok {
+			filename := filepath.Base(videoUrl) + ".mp4"
+			filename = strings.Replace(filename, " ", "", -1)
+
+			WaitGroupInstance.Add(1)
+			go downloadFile(site.ProxyConfig, videoUrl, site.videoPath, filename)
+		}
 	}
 }
 
-func downloadPhotos(site *Site, posts *response.PhotoPosts) {
+func downloadPhotos(site *Site, posts response.PhotoPosts) {
+
+	fmt.Println("post数量：", len(posts.Post), posts.Total)
+
 	for _, post := range posts.Post {
-		for index, url := range post.ParsePhotosUrl() {
-			fmt.Println("index:", index)
-			go downloadFile(site.ProxyConfig, url, site.photoPath, post.Tumblelog.Title+string(index))
+		for _, url := range post.ParsePhotosUrl() {
+			WaitGroupInstance.Add(1)
+			go downloadFile(site.ProxyConfig, url, site.photoPath, filepath.Base(url))
 		}
 	}
 }
@@ -37,15 +50,18 @@ func downloadFile(proxy ProxyConfig, url string, filePath string, filename strin
 	realPath := path.Join(filePath, filename)
 
 	if exists, _ := utils.PathExists(realPath); exists {
+		defer WaitGroupInstance.Done()
 		return
 	}
 
 	res, body, err := request.Proxy(proxy.Https).Get(url).End()
 
 	if err != nil {
-		fmt.Println(err, body, res)
+		fmt.Println("下载失败", err, body, res)
+		defer WaitGroupInstance.Done()
 		return
 	}
 
 	utils.FilePutContents(realPath, []byte(body))
+	defer WaitGroupInstance.Done()
 }

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"encoding/xml"
 	response2 "tumblr-crawler/downloader/response"
+	"math/big"
 )
 
 func NewSite(site string, config ProxyConfig) *Site {
@@ -18,13 +19,21 @@ func NewSite(site string, config ProxyConfig) *Site {
 	}
 }
 
-var BaseUrl = "http://{site}.tumblr.com/api/read?type={mediaType}&num={num}&start={start}"
+const (
+	BaseUrl    = "http://{site}.tumblr.com/api/read?type={mediaType}&num={num}&start={start}"
+	PageNumber = 50
+)
 
-func GenerateMediaUrl(site string, mediaType string, num string, start string) string {
+func GenerateMediaUrl(site string, mediaType string, num int64, start int64) string {
 	mediaUrl := strings.Replace(BaseUrl, "{site}", site, -1)
 	mediaUrl = strings.Replace(mediaUrl, "{mediaType}", mediaType, -1)
-	mediaUrl = strings.Replace(mediaUrl, "{num}", num, -1)
-	mediaUrl = strings.Replace(mediaUrl, "{start}", start, -1)
+	mediaUrl = strings.Replace(mediaUrl, "{num}", big.NewInt(num).String(), -1)
+	mediaUrl = strings.Replace(mediaUrl, "{start}", big.NewInt(start).String(), -1)
+	fmt.Println("site:", site)
+	fmt.Println("mediaType:", mediaType)
+	fmt.Println("num:", num)
+	fmt.Println("start:", start)
+	fmt.Println("mediaUrl:", mediaUrl)
 	return mediaUrl
 }
 
@@ -39,12 +48,14 @@ type Site struct {
 }
 
 func (this *Site) StartDownload() {
-	this.init()
-	this.DownloadVideo()
-	//this.DownloadPhoto()
+	this.Init()
+	WaitGroupInstance.Add(1)
+	go this.DownloadVideo()
+	WaitGroupInstance.Add(1)
+	go this.DownloadPhoto()
 }
 
-func (this *Site) init() {
+func (this *Site) Init() {
 	this.currentPath = path.Join(utils.CurrentPath(), "files")
 
 	if exists, _ := utils.PathExists(this.currentPath); !exists {
@@ -75,36 +86,50 @@ func (this *Site) DownloadPhoto() {
 	this.DownloadMedia("photo", 0)
 }
 
-func (this *Site) DownloadMedia(mediaType string, start int) {
+func (this *Site) DownloadMedia(mediaType string, start int64) {
 
-	mediaUrl := GenerateMediaUrl(this.Site, mediaType, "50", string(start))
-	res, responseString, err := this.request.Get(mediaUrl).End()
-	fmt.Println("mediaUrl", mediaUrl)
+	for {
 
-	if err != nil && res.StatusCode == 404 {
-		fmt.Println(res)
-		fmt.Println(err)
-		fmt.Println("site does not exist", this.Site)
-		return
-	}
+		mediaUrl := GenerateMediaUrl(this.Site, mediaType, PageNumber, start)
 
-	if mediaType == "video" {
-		video := response2.Video{}
-		err := xml.Unmarshal([]byte(responseString), &video)
-		if err != nil {
-			fmt.Printf("error: %v", err)
-			return
+		res, responseString, err := this.request.Get(mediaUrl).End()
+		fmt.Println("start: ", start)
+		fmt.Println("mediaUrl: ", mediaUrl)
+
+		if err != nil || res.StatusCode == 404 {
+			fmt.Println(res)
+			fmt.Println(err)
+			fmt.Println("site does not exist", this.Site)
+			break
 		}
 
-		go downloadVideos(this, &video.Posts)
-	} else {
-		photo := response2.Photo{}
-		err := xml.Unmarshal([]byte(responseString), &photo)
-		if err != nil {
-			fmt.Printf("error: %v", err)
-			return
-		}
+		if mediaType == "video" {
+			video := response2.NewVideo()
+			err := xml.Unmarshal([]byte(responseString), &video)
+			if err != nil {
+				fmt.Printf("error: %v", err)
+				break
+			} else if len(video.Posts.Post) <= 0 {
+				fmt.Println("没有更多内容了")
+				break
+			}
 
-		go downloadPhotos(this, &photo.Posts)
+			downloadVideos(this, video.Posts)
+		} else {
+			photo := response2.NewPhoto()
+			err := xml.Unmarshal([]byte(responseString), &photo)
+			if err != nil {
+				fmt.Printf("error: %v", err)
+				break
+			} else if len(photo.Posts.Post) <= 0 {
+				fmt.Println("没有更多内容了")
+				break
+			}
+
+			downloadPhotos(this, photo.Posts)
+		}
+		start += PageNumber
 	}
+
+	defer WaitGroupInstance.Done()
 }
