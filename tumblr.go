@@ -4,42 +4,31 @@ import (
 	"github.com/qbhy/go-utils"
 	"path"
 	"fmt"
-	"strings"
 	"tumblr-crawler/downloader"
 	"runtime"
-	io "io/ioutil"
+	config2 "tumblr-crawler/config"
 )
-
-func ParseSites(filename string) []string {
-	data, _ := io.ReadFile(filename)
-	wrapSites := string(data)
-	wrapSites = strings.Replace(wrapSites, "\t", ",", -1)
-	wrapSites = strings.Replace(wrapSites, "\n", ",", -1)
-	wrapSites = strings.Replace(wrapSites, "\r", ",", -1)
-	wrapSites = strings.Replace(wrapSites, " ", ",", -1)
-
-	return strings.Split(wrapSites, ",")
-}
 
 func main() {
 
-	config := downloader.NewConfig()
+	configLoader := config2.NewConfig()
 	currentPath := utils.CurrentPath()
-	sites := []string{}
-	var proxies downloader.ProxyConfig
+	sites := []config2.SiteConfig{}
+
+	var proxies config2.ProxyConfig
 
 	// 获取代理配置
 	proxyPath := path.Join(currentPath, "proxies.json")
 	if exists, _ := utils.PathExists(proxyPath); exists {
-		proxies = downloader.ProxyConfig{}
-		config.Load(proxyPath, &proxies)
+		proxies = config2.ProxyConfig{}
+		configLoader.Load(proxyPath, &proxies)
 		fmt.Println(proxies)
 	}
 
 	// 获取站点配置
-	sitesPath := path.Join(currentPath, "sites.txt")
+	sitesPath := path.Join(currentPath, "sites.json")
 	if exists, _ := utils.PathExists(sitesPath); exists {
-		sites = ParseSites(sitesPath)
+		configLoader.Load(sitesPath, &sites)
 	}
 
 	// 设置最大协程数

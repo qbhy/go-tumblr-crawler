@@ -9,6 +9,7 @@ import (
 	"sync"
 	"strings"
 	"path/filepath"
+	"tumblr-crawler/config"
 )
 
 var request *gorequest.SuperAgent
@@ -39,7 +40,7 @@ func downloadPhotos(site *Site, posts response.PhotoPosts) {
 	}
 }
 
-func downloadFile(proxy ProxyConfig, url string, filePath string, filename string) {
+func downloadFile(proxy config.ProxyConfig, url string, filePath string, filename string) {
 
 	realPath := path.Join(filePath, filename)
 
@@ -51,7 +52,7 @@ func downloadFile(proxy ProxyConfig, url string, filePath string, filename strin
 	res, body, err := request.Proxy(proxy.Https).Get(url).End()
 
 	if err != nil {
-		fmt.Println("下载失败", err, body, res)
+		fmt.Println("下载失败:", url, err, body, res)
 		defer WaitGroupInstance.Done()
 		return
 	}

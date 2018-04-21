@@ -34,6 +34,11 @@ func (post *VideoPost) ParseVideoUrl() (bool, string) {
 		return false, ""
 	}
 
+	// iframe 的视频暂时爬不了，当然你可以提个 PR
+	if strings.Contains(post.VideoPlayer, "iframe") {
+		return false, ""
+	}
+
 	playerString := strings.Replace(post.VideoPlayer, "&lt;", "<", -1)
 	playerString = strings.Replace(playerString, "&gt;", ">", -1)
 	playerString = strings.Replace(playerString, "'", "\"", -1)

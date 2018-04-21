@@ -10,9 +10,10 @@ import (
 	"encoding/xml"
 	response2 "tumblr-crawler/downloader/response"
 	"math/big"
+	"tumblr-crawler/config"
 )
 
-func NewSite(site string, config ProxyConfig) *Site {
+func NewSite(site config.SiteConfig, config config.ProxyConfig) *Site {
 	return &Site{
 		Site:        site,
 		ProxyConfig: config,
@@ -38,8 +39,8 @@ func GenerateMediaUrl(site string, mediaType string, num int64, start int64) str
 }
 
 type Site struct {
-	Site        string
-	ProxyConfig ProxyConfig
+	Site        config.SiteConfig
+	ProxyConfig config.ProxyConfig
 	currentPath string
 	sitePath    string
 	videoPath   string
@@ -49,10 +50,15 @@ type Site struct {
 
 func (this *Site) StartDownload() {
 	this.Init()
-	WaitGroupInstance.Add(1)
-	go this.DownloadVideo()
-	WaitGroupInstance.Add(1)
-	go this.DownloadPhoto()
+
+	if this.Site.Video {
+		WaitGroupInstance.Add(1)
+		go this.DownloadVideo()
+	}
+	if this.Site.Photo {
+		WaitGroupInstance.Add(1)
+		go this.DownloadPhoto()
+	}
 }
 
 func (this *Site) Init() {
@@ -62,7 +68,7 @@ func (this *Site) Init() {
 		os.Mkdir(this.currentPath, 0755)
 	}
 
-	this.sitePath = path.Join(this.currentPath, this.Site)
+	this.sitePath = path.Join(this.currentPath, this.Site.Site)
 	this.request = gorequest.New().Proxy(this.ProxyConfig.Https)
 
 	if exists, _ := utils.PathExists(this.sitePath); !exists {
@@ -90,7 +96,7 @@ func (this *Site) DownloadMedia(mediaType string, start int64) {
 
 	for {
 
-		mediaUrl := GenerateMediaUrl(this.Site, mediaType, PageNumber, start)
+		mediaUrl := GenerateMediaUrl(this.Site.Site, mediaType, PageNumber, start)
 
 		res, responseString, err := this.request.Get(mediaUrl).End()
 		fmt.Println("start: ", start)
