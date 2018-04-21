@@ -1,7 +1,5 @@
 package response
 
-import "fmt"
-
 type Photo struct {
 	Tumblr
 	Posts PhotoPosts `xml:"posts"`
@@ -36,14 +34,10 @@ func (post *PhotoPost) ParsePhotosUrl() map[string]string {
 	if len(post.PhotoSet.Photo) > 0 {
 		for key, photo := range post.PhotoSet.Photo {
 			photos[post.Tumblelog.Title+string(key)] = photo.Photos[0]
-			fmt.Println("photo-set-items: ", photo.Photos[0])
 		}
 	} else {
 		photos[post.Tumblelog.Title+"cover"] = post.Photos[0]
-		fmt.Println("cover: ", post.Photos[0])
 	}
-
-	fmt.Println("图片数量:", len(post.Photos))
 
 	return photos
 }

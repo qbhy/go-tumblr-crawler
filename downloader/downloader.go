@@ -19,9 +19,6 @@ func init() {
 }
 
 func downloadVideos(site *Site, posts response.VideoPosts) {
-
-	fmt.Println("post数量：", len(posts.Post), posts.Total)
-
 	for _, post := range posts.Post {
 		if ok, videoUrl := post.ParseVideoUrl(); ok {
 			filename := filepath.Base(videoUrl) + ".mp4"
@@ -34,9 +31,6 @@ func downloadVideos(site *Site, posts response.VideoPosts) {
 }
 
 func downloadPhotos(site *Site, posts response.PhotoPosts) {
-
-	fmt.Println("post数量：", len(posts.Post), posts.Total)
-
 	for _, post := range posts.Post {
 		for _, url := range post.ParsePhotosUrl() {
 			WaitGroupInstance.Add(1)

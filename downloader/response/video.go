@@ -29,8 +29,7 @@ func (post *VideoPost) ParseVideoUrl() (bool, string) {
 
 	player := VideoPlayer{}
 
-	fmt.Println("post.VideoPlayer", post.VideoPlayer)
-
+	// instagram 的视频暂时爬不了，当然你可以提个 PR
 	if strings.Contains(post.VideoPlayer, "instagram-media") {
 		return false, ""
 	}
