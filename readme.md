@@ -3,6 +3,7 @@ Easily download all the photos/videos from tumblr blogs. 下载指定的 Tumblr 
 
 ## 配置和运行
 配置需要爬取的站点: `sites.json`
+ps: 站点不需要 `.tumblr.com` 后缀
 ```
 [
   {
