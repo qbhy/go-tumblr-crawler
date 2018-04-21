@@ -12,7 +12,7 @@ func NewConfig() *Config {
 	return &Config{}
 }
 
-func (self *Config) Load(filename string, v interface{}) {
+func (this *Config) Load(filename string, v interface{}) {
 	data, err := io.ReadFile(filename)
 
 	if err != nil {

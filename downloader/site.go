@@ -33,45 +33,61 @@ type Site struct {
 	ProxyConfig ProxyConfig
 	currentPath string
 	sitePath    string
+	videoPath   string
+	photoPath   string
 	request     *gorequest.SuperAgent
 }
 
 func (this *Site) StartDownload() {
 	this.init()
-	//this.DownloadVideo()
-	this.DownloadImage()
+	this.DownloadVideo()
+	//this.DownloadPhoto()
 }
 
 func (this *Site) init() {
-	this.currentPath = utils.CurrentPath()
+	this.currentPath = path.Join(utils.CurrentPath(), "files")
+
+	if exists, _ := utils.PathExists(this.currentPath); !exists {
+		os.Mkdir(this.currentPath, 0755)
+	}
+
 	this.sitePath = path.Join(this.currentPath, this.Site)
 	this.request = gorequest.New().Proxy(this.ProxyConfig.Https)
 
-	if exists, _ := utils.PathExists(this.sitePath); exists {
+	if exists, _ := utils.PathExists(this.sitePath); !exists {
 		os.Mkdir(this.sitePath, 0755)
 	}
 }
 
 func (this *Site) DownloadVideo() {
-	this.DownloadMedia("video")
+	this.videoPath = path.Join(this.sitePath, "video")
+	if exists, _ := utils.PathExists(this.videoPath); !exists {
+		os.Mkdir(this.videoPath, 0755)
+	}
+	this.DownloadMedia("video", 0)
 }
 
-func (this *Site) DownloadImage() {
-	this.DownloadMedia("image")
+func (this *Site) DownloadPhoto() {
+	this.photoPath = path.Join(this.sitePath, "photo")
+	if exists, _ := utils.PathExists(this.photoPath); !exists {
+		os.Mkdir(this.photoPath, 0755)
+	}
+	this.DownloadMedia("photo", 0)
 }
 
-func (this *Site) DownloadMedia(mediaType string) {
+func (this *Site) DownloadMedia(mediaType string, start int) {
 
-	mediaUrl := GenerateMediaUrl(this.Site, mediaType, "50", "0")
+	mediaUrl := GenerateMediaUrl(this.Site, mediaType, "50", string(start))
 	res, responseString, err := this.request.Get(mediaUrl).End()
 	fmt.Println("mediaUrl", mediaUrl)
 
-	if err != nil {
+	if err != nil && res.StatusCode == 404 {
 		fmt.Println(res)
 		fmt.Println(err)
 		fmt.Println("site does not exist", this.Site)
 		return
 	}
+
 	if mediaType == "video" {
 		video := response2.Video{}
 		err := xml.Unmarshal([]byte(responseString), &video)
@@ -80,7 +96,7 @@ func (this *Site) DownloadMedia(mediaType string) {
 			return
 		}
 
-		downloadVideos(&video.Posts)
+		go downloadVideos(this, &video.Posts)
 	} else {
 		photo := response2.Photo{}
 		err := xml.Unmarshal([]byte(responseString), &photo)
@@ -89,6 +105,6 @@ func (this *Site) DownloadMedia(mediaType string) {
 			return
 		}
 
-		downloadPhotos(&photo.Posts)
+		go downloadPhotos(this, &photo.Posts)
 	}
 }

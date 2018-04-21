@@ -7,7 +7,6 @@ import (
 	"strings"
 	"tumblr-crawler/downloader"
 	"runtime"
-	"sync"
 	io "io/ioutil"
 )
 
@@ -20,11 +19,6 @@ func ParseSites(filename string) string {
 	wrapSites = strings.Replace(wrapSites, " ", ",", -1)
 	return wrapSites
 }
-
-var waitGroup sync.WaitGroup //定义一个同步等待的组
-
-var num = 14 //定义一工并发多少数量
-var cnum chan int
 
 func main() {
 
@@ -53,9 +47,15 @@ func main() {
 
 	// 下面这个for循环的意义就是利用信道的阻塞，一直从信道里取数据，直到取得跟并发数一样的个数的数据，则视为所有goroutines完成。
 
-	site := downloader.NewSite("tbr91677", proxies)
+	site := downloader.NewSite("1night8times", proxies)
 
 	site.StartDownload()
+
+	for {
+		ok := <-downloader.Channel
+
+		fmt.Println(ok)
+	}
 
 	fmt.Println("WE DONE!!!")
 }
