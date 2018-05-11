@@ -1,16 +1,18 @@
 package downloader
 
 import (
-	"github.com/qbhy/go-utils"
-	"path"
-	"os"
-	"strings"
-	"github.com/parnurzeal/gorequest"
-	"fmt"
 	"encoding/xml"
-	response2 "tumblr-crawler/downloader/response"
+	"fmt"
 	"math/big"
-	"tumblr-crawler/config"
+	"os"
+	"path"
+	"strings"
+
+	"github.com/qbhy/go-tumblr-crawler/config"
+
+	"github.com/parnurzeal/gorequest"
+	response2 "github.com/qbhy/go-tumblr-crawler/downloader/response"
+	"github.com/qbhy/go-utils"
 )
 
 func NewSite(site config.SiteConfig, config config.ProxyConfig) *Site {

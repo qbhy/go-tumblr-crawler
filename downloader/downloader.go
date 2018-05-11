@@ -1,18 +1,21 @@
 package downloader
 
 import (
-	"tumblr-crawler/downloader/response"
 	"fmt"
-	"github.com/qbhy/go-utils"
-	"github.com/parnurzeal/gorequest"
 	"path"
-	"sync"
-	"strings"
 	"path/filepath"
-	"tumblr-crawler/config"
+	"strings"
+	"sync"
+
+	"github.com/qbhy/go-tumblr-crawler/config"
+
+	"github.com/parnurzeal/gorequest"
+	"github.com/qbhy/go-tumblr-crawler/downloader/response"
+	"github.com/qbhy/go-utils"
 )
 
 var request *gorequest.SuperAgent
+
 var WaitGroupInstance sync.WaitGroup
 
 func init() {

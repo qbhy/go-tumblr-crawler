@@ -1,12 +1,13 @@
 package main
 
 import (
-	"github.com/qbhy/go-utils"
-	"path"
 	"fmt"
-	"tumblr-crawler/downloader"
+	"path"
 	"runtime"
-	config2 "tumblr-crawler/config"
+
+	config2 "github.com/qbhy/go-tumblr-crawler/config"
+	"github.com/qbhy/go-tumblr-crawler/downloader"
+	"github.com/qbhy/go-utils"
 )
 
 func main() {
